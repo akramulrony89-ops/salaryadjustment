@@ -2,7 +2,7 @@
 <html lang="bn">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>বকেয়া বেতন বিল জেনারেটর (টি.আর. ফরম নং ১৩)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,7 +10,7 @@
 <style>
 :root{color-scheme:light;--bd:#cfd6e0;--ink:#1c2430;--mut:#5b6675;--pri:#0b6b4f;--pri2:#e6f4ef;--warn:#b42318}
 *{box-sizing:border-box}
-body{padding-top:env(safe-area-inset-top,0px);margin:0;background:#f2f4f8;color:var(--ink);font-family:'Nikosh','Noto Sans Bengali','Kalpurush','Siyam Rupali','Vrinda','Shonar Bangla',sans-serif;font-size:16px;line-height:1.5}
+body{margin:0;background:#f2f4f8;color:var(--ink);font-family:'Nikosh','Noto Sans Bengali','Kalpurush','Siyam Rupali','Vrinda','Shonar Bangla',sans-serif;font-size:16px;line-height:1.5}
 .wrap{max-width:980px;margin:0 auto;padding:14px 12px 90px}
 h1{font-size:20px;margin:6px 0 2px}
 .sub0{color:var(--mut);font-size:14px;margin:0 0 12px}
@@ -37,7 +37,7 @@ button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--bd)
 button.pri{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}
 button.x{padding:3px 10px;font-size:13px;color:var(--warn)}
 .addrow{display:flex;gap:8px;flex-wrap:wrap}
-.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;justify-content:center;flex-wrap:wrap;z-index:5}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:8px 10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;z-index:5}
 .bar button{flex:1 1 140px;max-width:260px}
 #status{text-align:center;font-size:13px;color:var(--mut);min-height:20px;margin:4px 0}
 #previewOuter{overflow:hidden;width:100%}
@@ -90,7 +90,7 @@ button.x{padding:3px 10px;font-size:13px;color:var(--warn)}
 <div class="wrap">
   <div class="ui">
     <h1>বকেয়া বেতন বিল জেনারেটর</h1>
-    <p class="sub0">টি.আর. ফরম নং ১৩ – গেজেটেড সরকারি কর্মকর্তার বেতন বিল। তথ্য দিলে নিচে ফর্ম নিজে নিজে তৈরি হবে; তারপর Word (.docx) বা PDF সংরক্ষণ করুন।</p>
+    <p class="sub0">টি.আর. ফরম নং ১৩ – গেজেটেড সরকারি কর্মকর্তার বেতন বিল। তথ্য দিলে নিচে ফর্ম নিজে নিজে তৈরি হবে; তারপর Word (.docx) বা PDF ডাউনলোড করুন।</p>
 
     <div class="card">
       <h2>১. মূল বেতন</h2>
@@ -159,8 +159,9 @@ button.x{padding:3px 10px;font-size:13px;color:var(--warn)}
 </div>
 
 <div class="bar ui">
-  <button type="button" class="pri" id="btnDocx">Word (.docx) সংরক্ষণ</button>
-  <button type="button" class="pri" id="btnPdf">PDF সংরক্ষণ</button>
+  <button type="button" class="pri" id="btnDocx">Word (.docx) ডাউনলোড</button>
+  <button type="button" class="pri" id="btnPdf">PDF ডাউনলোড</button>
+  <button type="button" id="btnPrint">প্রিন্ট</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
@@ -530,27 +531,29 @@ function filename(ext) {
   const m = lastModel; const st = readState();
   return `Arrear_Pay_Bill_${m && m.mi ? m.mi.short.replace(/[^\w\u0980-\u09FF–-]+/g, '_') : 'bill'}_${parseNum(st.year) || ''}.${ext}`;
 }
-async function saveFile(blob, name) {
-  let d = null;
-  try { d = await claude.use('downloads'); } catch (e) {}
-  if (!d) { setStatus('এই ভিউতে ফাইল ডাউনলোড চালু নেই।'); return false; }
-  try { await d.save({ filename: name, data: blob }); return true; }
-  catch (e) { setStatus(e && e.code === 'declined' ? 'ডাউনলোড বাতিল করা হয়েছে।' : 'ফাইল সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।'); return false; }
+function triggerDownload(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
 }
 async function downloadDocx() {
   update();
   if (!lastModel.mi) { setStatus('আগে মাসের সময়কাল ঠিক করুন।'); return; }
-  if (!window.docx) { setStatus('Word লাইব্রেরি লোড হয়নি – ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'); return; }
+  if (!window.docx) {
+    // offline fallback: Word-compatible .doc built from the same HTML
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>${document.querySelector('style').textContent}</style></head><body>${$('sheet').outerHTML}</body></html>`;
+    triggerDownload(new Blob(['\ufeff', html], { type: 'application/msword' }), filename('doc'));
+    setStatus('ইন্টারনেট নেই বলে .doc ফাইল তৈরি হয়েছে। .docx এর জন্য অনলাইনে আবার চেষ্টা করুন।'); return;
+  }
   try {
     setStatus('Word ফাইল তৈরি হচ্ছে…');
     const blob = await docx.Packer.toBlob(buildDocx(docx, lastModel));
-    if (await saveFile(blob, filename('docx'))) setStatus('Word (.docx) ফাইল সংরক্ষিত হয়েছে।');
+    triggerDownload(blob, filename('docx')); setStatus('Word (.docx) ফাইল ডাউনলোড হয়েছে।');
   } catch (err) { console.error(err); setStatus('Word ফাইল তৈরি করা যায়নি: ' + err.message); }
 }
 async function downloadPDF() {
   update();
   if (!lastModel.mi) { setStatus('আগে মাসের সময়কাল ঠিক করুন।'); return; }
-  if (!window.html2pdf) { setStatus('PDF লাইব্রেরি লোড হয়নি – ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'); return; }
+  if (!window.html2pdf) { setStatus('PDF লাইব্রেরি লোড হয়নি। প্রিন্ট খুলে "Save as PDF" বেছে নিন।'); window.print(); return; }
   const holder = document.createElement('div');
   holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff';
   holder.innerHTML = `<div class="sheet">${sheetHTML(lastModel)}</div>`;
@@ -559,11 +562,11 @@ async function downloadPDF() {
   try {
     setStatus('PDF তৈরি হচ্ছে…');
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    const pdfBlob = await html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 },
+    await html2pdf().set({ margin: 0, filename: filename('pdf'), image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css'] } }).from(holder.firstChild).outputPdf('blob');
-    if (await saveFile(pdfBlob, filename('pdf'))) setStatus('PDF ফাইল সংরক্ষিত হয়েছে।');
-  } catch (err) { console.error(err); setStatus('PDF তৈরি করা যায়নি, আবার চেষ্টা করুন।'); }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css'] } }).from(holder.firstChild).save();
+    setStatus('PDF ডাউনলোড হয়েছে।');
+  } catch (err) { console.error(err); setStatus('PDF তৈরি হয়নি – প্রিন্ট খুলে "Save as PDF" ব্যবহার করুন।'); }
   finally { holder.remove(); }
 }
 
@@ -584,7 +587,7 @@ function init() {
     extras[i][t.dataset.k] = t.type === 'checkbox' ? t.checked : t.value; if (t.dataset.k === 'code') renderExtras(); update(); });
   $('extras').addEventListener('click', ev => { const d = ev.target.dataset.del; if (d != null) { extras.splice(+d, 1); renderExtras(); update(); } });
   $('addAllow').onclick = () => addExtra('allow'); $('addDed').onclick = () => addExtra('ded');
-  $('btnDocx').onclick = downloadDocx; $('btnPdf').onclick = downloadPDF;
+  $('btnDocx').onclick = downloadDocx; $('btnPdf').onclick = downloadPDF; $('btnPrint').onclick = () => { update(); window.print(); };
   window.addEventListener('resize', fit);
   update();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
@@ -592,4 +595,4 @@ function init() {
 init();
 </script>
 </body>
-</html> 
+</html>
