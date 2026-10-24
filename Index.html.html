@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>বকেয়া বেতন বিল জেনারেটর (টি.আর. ফরম নং ১৩)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light;--bd:#cfd6e0;--ink:#1c2430;--mut:#5b6675;--pri:#0b6b4f;--pri2:#e6f4ef;--warn:#b42318}
+*{box-sizing:border-box}
+body{padding-top:env(safe-area-inset-top,0px);margin:0;background:#f2f4f8;color:var(--ink);font-family:'Nikosh','Noto Sans Bengali','Kalpurush','Siyam Rupali','Vrinda','Shonar Bangla',sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:14px 12px 90px}
+h1{font-size:20px;margin:6px 0 2px}
+.sub0{color:var(--mut);font-size:14px;margin:0 0 12px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h2{font-size:16px;margin:0 0 10px;color:var(--pri)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+label.f{display:block;font-size:13px;color:var(--mut);margin-bottom:3px}
+input[type=text],select{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+input[type=text]:focus,select:focus{outline:2px solid var(--pri);border-color:var(--pri)}
+.big input{font-size:18px;font-weight:600}
+.radio{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;margin-top:4px}
+.radio label{display:flex;align-items:center;gap:5px}
+.hint{font-size:12px;color:var(--mut);margin-top:3px}
+.sum{background:var(--pri2);border-color:#b7dccd}
+.sum table{width:100%;border-collapse:collapse;font-size:15px}
+.sum td{padding:3px 0}.sum td:last-child{text-align:right;font-weight:600;white-space:nowrap}
+.sum tr.tot td{border-top:1px solid #7fb9a3;padding-top:6px;font-size:17px;color:var(--pri)}
+.warn{color:var(--warn);font-size:14px;margin-top:6px;font-weight:600}
+.ex{border:1px dashed var(--bd);border-radius:10px;padding:10px;margin-bottom:8px;display:grid;gap:8px}
+.ex-h{display:flex;justify-content:space-between;align-items:center}
+.ex label{font-size:14px;display:flex;gap:6px;align-items:center}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--bd);background:#fff;padding:9px 14px;color:var(--ink)}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}
+button.x{padding:3px 10px;font-size:13px;color:var(--warn)}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;justify-content:center;flex-wrap:wrap;z-index:5}
+.bar button{flex:1 1 140px;max-width:260px}
+#status{text-align:center;font-size:13px;color:var(--mut);min-height:20px;margin:4px 0}
+#previewOuter{overflow:hidden;width:100%}
+#scaleBox{width:210mm;transform-origin:top left}
+.pv-title{font-size:15px;color:var(--mut);margin:14px 2px 6px}
+
+/* ---------- form sheet (preview, PDF, print) ---------- */
+.sheet{font-family:'Nikosh','Noto Sans Bengali','Kalpurush','Siyam Rupali','Vrinda','Shonar Bangla',sans-serif;color:#000;font-size:9pt;line-height:1.25}
+.page{width:210mm;min-height:296mm;padding:8mm 19.4mm 6mm;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.18);margin-bottom:6mm}
+.page.p1{page-break-after:always;break-after:page}
+.sheet table{border-collapse:collapse;width:100%;table-layout:fixed}
+.sheet td{padding:.25mm 1mm;vertical-align:middle;word-wrap:break-word}
+.sheet .top td{border:0}
+.sheet .ttl{font-size:14pt;font-weight:700;text-align:center}
+.sheet .mth{text-align:center;font-size:10pt}
+.sheet .dept{text-align:center;font-size:9.5pt;margin:1.2mm 0}
+.sheet .code{width:auto;margin:0 auto}
+.sheet .code td{border:0;padding:.4mm 0}
+.sheet .code td.bx{border:.3mm solid #000;width:6.6mm;height:5.2mm;text-align:center}
+.sheet .info td{border:0;font-size:9pt;padding:.5mm 1mm}
+.sheet .main{margin-top:2.5mm}
+.sheet .main td,.sheet .main th{border:.3mm solid #000}
+.sheet .main th{font-weight:400;text-align:center;padding:.5mm 1mm}
+.sheet .main td.c{text-align:center}.sheet .main td.r{text-align:right}.sheet .main td.b{font-weight:700}
+.sheet .main tr{height:4.7mm}.sheet .main tr.tall{height:7.2mm}
+.sheet .sub{font-size:7.5pt}
+.sheet .cb{display:inline-block;width:2.6mm;height:2.6mm;border:.3mm solid #000;line-height:2.2mm;font-size:8pt;text-align:center;vertical-align:middle}
+.sheet .lbl{text-align:right;font-weight:700}
+.sheet .sec{font-weight:700}
+.sheet .fn{font-size:7.5pt;margin-top:1mm}
+.sheet .p2 td{border:0;vertical-align:top;padding:.5mm 1mm}
+.sheet .stamp{border:.3mm solid #000;height:26mm;text-align:center;vertical-align:middle!important}
+.sheet .h2{font-size:11pt;text-align:center;margin:7mm 0 4mm}
+.sheet .ins{font-size:9.5pt;margin:0 0 3mm;line-height:1.45}
+.sheet .sg{margin-top:1.2mm}
+
+@media (max-width:560px){.grid{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4;margin:0}
+  body{background:#fff}
+  .ui,.bar,.pv-title,#status{display:none!important}
+  .wrap{padding:0;max-width:none}
+  #previewOuter{height:auto!important;overflow:visible}
+  #scaleBox{transform:none!important}
+  .page{box-shadow:none;margin:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="ui">
+    <h1>বকেয়া বেতন বিল জেনারেটর</h1>
+    <p class="sub0">টি.আর. ফরম নং ১৩ – গেজেটেড সরকারি কর্মকর্তার বেতন বিল। তথ্য দিলে নিচে ফর্ম নিজে নিজে তৈরি হবে; তারপর Word (.docx) বা PDF সংরক্ষণ করুন।</p>
+
+    <div class="card">
+      <h2>১. মূল বেতন</h2>
+      <div class="grid big">
+        <div><label class="f" for="oldBasic">পূর্বের মূল বেতন (টাকা)</label><input type="text" id="oldBasic" inputmode="decimal" value="37280"></div>
+        <div><label class="f" for="newBasic">বর্তমান মূল বেতন (টাকা)</label><input type="text" id="newBasic" inputmode="decimal" value="53300"></div>
+      </div>
+      <div class="hint">ইংরেজি বা বাংলা – যেকোনো সংখ্যা লিখতে পারবেন।</div>
+    </div>
+
+    <div class="card">
+      <h2>২. বকেয়ার সময়কাল</h2>
+      <div class="grid">
+        <div><label class="f" for="fromM">শুরুর মাস</label><select id="fromM"></select></div>
+        <div><label class="f" for="toM">শেষ মাস</label><select id="toM"></select></div>
+        <div class="full"><label class="f" for="year">বছর</label><input type="text" id="year" inputmode="numeric" value="2026"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>৩. বিশেষ সুবিধা (কর্তন)</h2>
+      <label class="f" for="spAmt">বিশেষ সুবিধার পরিমাণ (টাকা) – ০ দিলে কর্তন হবে না</label>
+      <input type="text" id="spAmt" inputmode="decimal" value="3728">
+      <div class="radio">
+        <label><input type="radio" name="spMode" value="monthly" checked> প্রতি মাসের পরিমাণ (× মাস)</label>
+        <label><input type="radio" name="spMode" value="total"> মোট এককালীন পরিমাণ</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>৪. অতিরিক্ত ভাতা / কর্তন (ঐচ্ছিক)</h2>
+      <div id="extras"></div>
+      <div class="addrow">
+        <button type="button" id="addAllow">+ ভাতা (বকেয়া) যোগ করুন</button>
+        <button type="button" id="addDed">+ কর্তন যোগ করুন</button>
+      </div>
+      <div class="hint">যেমন: বাড়িভাড়া ভাতার মাসিক পার্থক্য, আয়কর, ভবিষ্য তহবিল ইত্যাদি।</div>
+    </div>
+
+    <div class="card">
+      <h2>৫. কর্মকর্তার তথ্য</h2>
+      <div class="grid">
+        <div><label class="f" for="name">নাম</label><input type="text" id="name" value="মো: একরামুল হক"></div>
+        <div><label class="f" for="desig">পদবি</label><input type="text" id="desig" value="উপজেলা প্রাণিসম্পদ কর্মকর্তা"></div>
+        <div class="full"><label class="f" for="dept">দপ্তর</label><input type="text" id="dept" value="উপজেলা প্রাণিসম্পদ দপ্তর ও ভেটেরিনারি হাসপাতাল, ভোলাহাট, চাপাইনবাবগঞ্জ"></div>
+        <div><label class="f" for="nid">এনআইডি নং</label><input type="text" id="nid" inputmode="numeric" value="9137055753"></div>
+        <div><label class="f" for="orgCode">প্রাতিষ্ঠানিক/অপারেশন কোড (৭ ঘর)</label><input type="text" id="orgCode" inputmode="numeric" maxlength="7" value=""></div>
+        <div><label class="f" for="gpf">ভবিষ্য তহবিল হিসাব নং</label><input type="text" id="gpf" value=""></div>
+        <div><label class="f" for="post">ডাক জীবনবীমা নং</label><input type="text" id="post" value=""></div>
+        <div><label class="f" for="tin">টি আই এন/ই টি আই এন</label><input type="text" id="tin" value=""></div>
+        <div><label class="f" for="signDate">স্বাক্ষরের তারিখ</label><input type="text" id="signDate" placeholder="যেমন: ২৪/১০/২০২৬" value=""></div>
+        <div><label class="f" for="token">টোকেন নং</label><input type="text" id="token" value=""></div>
+        <div><label class="f" for="tokenDate">টোকেনের তারিখ</label><input type="text" id="tokenDate" value=""></div>
+        <div><label class="f" for="voucher">ভাউচার নং</label><input type="text" id="voucher" value=""></div>
+        <div><label class="f" for="voucherDate">ভাউচারের তারিখ</label><input type="text" id="voucherDate" value=""></div>
+      </div>
+      <div class="hint">তথ্যগুলো এই ব্রাউজারে সংরক্ষিত থাকে, পরের বার আবার লিখতে হবে না।</div>
+    </div>
+
+    <div class="card sum" id="sumCard"></div>
+    <div id="status"></div>
+    <div class="pv-title">ফর্মের প্রিভিউ</div>
+  </div>
+
+  <div id="previewOuter"><div id="scaleBox"><div class="sheet" id="sheet"></div></div></div>
+</div>
+
+<div class="bar ui">
+  <button type="button" class="pri" id="btnDocx">Word (.docx) সংরক্ষণ</button>
+  <button type="button" class="pri" id="btnPdf">PDF সংরক্ষণ</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+// ==CORE_START==
+const BN = '০১২৩৪৫৬৭৮৯';
+const toBn = s => String(s).replace(/[0-9]/g, d => BN[d]);
+const toEn = s => String(s).replace(/[০-৯]/g, d => BN.indexOf(d)).replace(/[,\s]/g, '');
+function parseNum(s) { const v = parseFloat(toEn(s == null ? '' : s)); return isNaN(v) ? 0 : v; }
+const toPaisa = x => Math.round(x * 100);
+
+function groupBD(n) {
+  const s = String(n);
+  if (s.length <= 3) return s;
+  return s.slice(0, -3).replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + s.slice(-3);
+}
+function splitPaisa(p) {
+  const neg = p < 0, a = Math.abs(p), t = Math.floor(a / 100), ps = a % 100;
+  return { taka: (neg ? '−' : '') + toBn(groupBD(t)), paisa: ps ? toBn(String(ps).padStart(2, '0')) : '' };
+}
+const moneyStr = p => { const s = splitPaisa(p); return s.paisa ? s.taka + '.' + s.paisa : s.taka; };
+
+const W99 = ['শূন্য','এক','দুই','তিন','চার','পাঁচ','ছয়','সাত','আট','নয়','দশ','এগারো','বারো','তেরো','চৌদ্দ','পনেরো','ষোল','সতেরো','আঠারো','উনিশ',
+ 'বিশ','একুশ','বাইশ','তেইশ','চব্বিশ','পঁচিশ','ছাব্বিশ','সাতাশ','আটাশ','ঊনত্রিশ','ত্রিশ','একত্রিশ','বত্রিশ','তেত্রিশ','চৌত্রিশ','পঁয়ত্রিশ','ছত্রিশ','সাঁইত্রিশ','আটত্রিশ','ঊনচল্লিশ',
+ 'চল্লিশ','একচল্লিশ','বিয়াল্লিশ','তেতাল্লিশ','চুয়াল্লিশ','পঁয়তাল্লিশ','ছেচল্লিশ','সাতচল্লিশ','আটচল্লিশ','ঊনপঞ্চাশ','পঞ্চাশ','একান্ন','বায়ান্ন','তিপ্পান্ন','চুয়ান্ন','পঞ্চান্ন','ছাপ্পান্ন','সাতান্ন','আটান্ন','ঊনষাট',
+ 'ষাট','একষট্টি','বাষট্টি','তেষট্টি','চৌষট্টি','পঁয়ষট্টি','ছেষট্টি','সাতষট্টি','আটষট্টি','ঊনসত্তর','সত্তর','একাত্তর','বাহাত্তর','তিয়াত্তর','চুয়াত্তর','পঁচাত্তর','ছিয়াত্তর','সাতাত্তর','আটাত্তর','ঊনআশি',
+ 'আশি','একাশি','বিরাশি','তিরাশি','চুরাশি','পঁচাশি','ছিয়াশি','সাতাশি','আটাশি','ঊননব্বই','নব্বই','একানব্বই','বিরানব্বই','তিরানব্বই','চুরানব্বই','পঁচানব্বই','ছিয়ানব্বই','সাতানব্বই','আটানব্বই','নিরানব্বই'];
+function words(n) {
+  if (n === 0) return 'শূন্য';
+  const parts = [];
+  const cr = Math.floor(n / 1e7); n %= 1e7;
+  const lk = Math.floor(n / 1e5); n %= 1e5;
+  const th = Math.floor(n / 1e3); n %= 1e3;
+  const hu = Math.floor(n / 100), rest = n % 100;
+  if (cr) parts.push(words(cr) + ' কোটি');
+  if (lk) parts.push(W99[lk] + ' লক্ষ');
+  if (th) parts.push(W99[th] + ' হাজার');
+  if (hu) parts.push(W99[hu] + 'শত');
+  if (rest) parts.push(W99[rest]);
+  return parts.join(' ');
+}
+function amountWords(p) {
+  const neg = p < 0, a = Math.abs(p), t = Math.floor(a / 100), ps = a % 100;
+  const out = [];
+  if (t > 0 || ps === 0) out.push(words(t) + ' টাকা');
+  if (ps > 0) out.push(words(ps) + ' পয়সা');
+  return (neg ? 'ঋণাত্মক ' : '') + out.join(' ') + ' মাত্র।';
+}
+
+const MONTHS = ['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+function monthInfo(from, to, year) {
+  const n = to - from + 1;
+  if (n < 1) return null;
+  const names = MONTHS.slice(from, to + 1);
+  let list;
+  if (n === 1) list = names[0];
+  else if (n <= 3) list = names.slice(0, -1).join(', ') + ' ও ' + names[n - 1];
+  else list = names[0] + ' হতে ' + names[n - 1];
+  const short = n === 1 ? names[0] : names[0] + '–' + names[n - 1];
+  return { n, list: list + ' ' + toBn(year), short };
+}
+
+const ALLOW = [['3111306','শিক্ষা ভাতা'],['3111310','বাড়িভাড়া ভাতা'],['3111311','চিকিৎসা ভাতা'],['3111312','মোবাইল/সেলফোন ভাতা'],
+ ['3258140','মোটরযান রক্ষণাবেক্ষণ ব্যয়'],['3111301','দায়িত্ব ভাতা'],['3111331','আপ্যায়ন ভাতা'],['3111333','গৃহ-সহায়তা ভাতা'],
+ ['3111339','পাচক ভাতা'],['3111340','নিরাপত্তা ভাতা'],['3111341','বিচারিক ভাতা']];
+const DEDUCT = [['1111102','ব্যক্তি কর্তৃক দেয় অগ্রিম আয়কর'],['1162101','স্ট্যাম্প ডিউটি'],['1411202','সরকারি কর্মচারীকে প্রদত্ত ঋণের সুদ'],
+ ['1422404','পানি ও পয়ঃনিষ্কাশন ব্যবস্থা চার্জ'],['1441204','পৌরকর'],['7215101','গৃহনির্মাণ ঋণ'],['7215104','মোটরগাড়ি ঋণ'],
+ ['7215103','সুদমুক্ত ঋণ'],['7215105','মোটর সাইকেল ঋণ'],['7215102','কম্পিউটার ঋণ'],['8112201','সাধারণ ভবিষ্য তহবিল (সিভিল)'],
+ ['8172401','তিতাস গ্যাস বিল'],['8172402','বাখরাবাদ গ্যাস বিল'],['8172403','জালালাবাদ গ্যাস বিল'],['8172404','কর্ণফুলী গ্যাস বিল'],
+ ['8172503','কর্মচারী কল্যাণ তহবিল'],['8172504','কর্মচারী যৌথবিমা তহবিল']];
+
+// in: {oldBasic,newBasic,fromM,toM,year,sp,spMode,extras:[{type,code,custom,amt,mult}],header:{...}}
+function compute(inp) {
+  const mi = monthInfo(inp.fromM, inp.toM, inp.year);
+  const n = mi ? mi.n : 0;
+  const oldP = toPaisa(inp.oldBasic), newP = toPaisa(inp.newBasic), diffP = newP - oldP, arrearP = diffP * n;
+  const extraAmt = e => { const m = toPaisa(e.amt); return e.mult ? m * n : m; };
+
+  function applyExtras(type, std, rows) {
+    std.forEach(([code, desc]) => {
+      const ex = inp.extras.filter(e => e.type === type && e.code === code);
+      if (!ex.length) { rows.push({ code, desc, rate: null, amount: null }); return; }
+      const amount = ex.reduce((s, e) => s + extraAmt(e), 0);
+      const allMult = ex.every(e => e.mult);
+      rows.push({ code, desc, rate: allMult ? ex.reduce((s, e) => s + toPaisa(e.amt), 0) : null, amount,
+        sub: allMult && n ? `${moneyStr(ex.reduce((s, e) => s + toPaisa(e.amt), 0))} × ${toBn(n)} মাস` : '' });
+    });
+    inp.extras.filter(e => e.type === type && e.code === 'custom').forEach(e => {
+      rows.push({ code: '', desc: (e.custom || '').trim() || 'অন্যান্য', rate: e.mult ? toPaisa(e.amt) : null, amount: extraAmt(e),
+        sub: e.mult && n ? `${moneyStr(toPaisa(e.amt))} × ${toBn(n)} মাস` : '' });
+    });
+  }
+
+  const allowRows = [
+    { code: '', desc: 'বর্তমান মূল বেতন (নতুন) – গণনার জন্য', rate: newP, amount: null },
+    { code: '', desc: 'পূর্বের মূল বেতন (পুরাতন) – গণনার জন্য', rate: oldP, amount: null },
+    { code: '3111101', desc: 'মূল বেতন (অফিসার) – বকেয়া পার্থক্য', rate: diffP, amount: arrearP,
+      sub: mi ? `(${moneyStr(newP)} − ${moneyStr(oldP)}) = ${moneyStr(diffP)} × ${toBn(n)} মাস (${mi.list})` : '' },
+  ];
+  applyExtras('allow', ALLOW, allowRows);
+  while (allowRows.length < 14) allowRows.push({ code: '', desc: '', rate: null, amount: null });
+  const totalA = allowRows.reduce((s, r) => s + (r.amount || 0), 0);
+
+  const dedRows = [];
+  applyExtras('ded', DEDUCT, dedRows);
+  // custom deduction rows are pushed after standard rows by applyExtras; insert special benefit before them
+  const spP = toPaisa(inp.sp);
+  if (spP > 0) {
+    const monthly = inp.spMode === 'monthly';
+    const row = { code: '', desc: 'বিশেষ সুবিধা সমন্বয় (কর্তন)', rate: monthly ? spP : null, amount: monthly ? spP * n : spP,
+      sub: mi ? (monthly ? `${mi.list} (${toBn(n)} মাস) × ${moneyStr(spP)}` : `${mi.list} – এককালীন`) : '' };
+    const firstCustom = dedRows.findIndex(r => r.code === '' );
+    if (firstCustom === -1) dedRows.push(row); else dedRows.splice(firstCustom, 0, row);
+  }
+  while (dedRows.length < 19) dedRows.push({ code: '', desc: '', rate: null, amount: null });
+  if (!dedRows.some(r => r.desc === '' )) dedRows.push({ code: '', desc: '', rate: null, amount: null });
+  const totalB = dedRows.reduce((s, r) => s + (r.amount || 0), 0);
+  const net = totalA - totalB;
+
+  const h = inp.header;
+  return { n, mi, oldP, newP, diffP, arrearP, spP, totalA, totalB, net, words: amountWords(net), allowRows, dedRows,
+    header: Object.assign({}, h, {
+      month: mi ? mi.short + ' (বকেয়া)' : '', year: toBn(inp.year),
+      nid: toBn(toEn(h.nid || '')), orgCode: toEn(h.orgCode || '').slice(0, 7).split('')
+    }) };
+}
+
+function buildDocx(docx, m) {
+  const { Document, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, VerticalAlign, HeightRule, PageBreak, TableLayoutType } = docx;
+  const FONT = 'Nikosh';
+  const NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const LINE = { style: BorderStyle.SINGLE, size: 4, color: '000000' };
+  const noB = { top: NONE, bottom: NONE, left: NONE, right: NONE };
+  const allB = { top: LINE, bottom: LINE, left: LINE, right: LINE };
+  const run = (t, o = {}) => new TextRun({ text: t, font: FONT, size: o.size || 18, bold: o.bold, underline: o.underline ? {} : undefined });
+  const para = (c, o = {}) => new Paragraph({ children: typeof c === 'string' ? [run(c, o)] : c, alignment: o.align || AlignmentType.LEFT,
+    spacing: { before: o.before || 0, after: o.after || 0, line: o.line || 240 } });
+  const H = m.header;
+
+  const W = [450, 1250, 3906, 1100, 750, 1500, 750];
+  const TW = W.reduce((a, b) => a + b, 0);
+  function cell(content, idx, o = {}) {
+    const span = o.span || 1; let w = 0; for (let i = idx; i < idx + span; i++) w += W[i];
+    const children = Array.isArray(content) ? content : [para(content, { align: o.align, bold: o.bold, size: o.size })];
+    return new TableCell({ children, width: { size: w, type: WidthType.DXA }, borders: allB, columnSpan: span > 1 ? span : undefined,
+      rowSpan: o.rowSpan, verticalAlign: VerticalAlign.CENTER, margins: { top: 15, bottom: 15, left: 60, right: 60 } });
+  }
+  const BOX = t => new TextRun({ text: t, font: 'Segoe UI Symbol', size: 18 });
+  const boxCell = on => cell([para([BOX(on ? '☒' : '☐')], { align: AlignmentType.CENTER })], 0);
+  const row = (cells, h = 255) => new TableRow({ children: cells, height: { value: h, rule: HeightRule.ATLEAST }, cantSplit: true });
+  const mc = p => p == null ? ['', ''] : (s => [s.taka, s.paisa])(splitPaisa(p));
+  function itemRow(r) {
+    const [rt, rp] = mc(r.rate), [at, ap] = mc(r.amount);
+    const dp = [para(r.desc || '', { size: 18 })];
+    if (r.sub) dp.push(para(r.sub, { size: 15 }));
+    return row([boxCell(r.amount != null), cell(r.code ? toBn(r.code) : '', 1, { align: AlignmentType.CENTER }), cell(dp, 2),
+      cell(rt, 3, { align: AlignmentType.RIGHT }), cell(rp, 4, { align: AlignmentType.RIGHT }),
+      cell(at, 5, { align: AlignmentType.RIGHT, bold: true }), cell(ap, 6, { align: AlignmentType.RIGHT, bold: true })], r.sub ? 380 : 255);
+  }
+  const sec = t => row([cell(t, 0, { span: 7, bold: true })]);
+  const rows = [];
+  rows.push(new TableRow({ tableHeader: true, height: { value: 255, rule: HeightRule.ATLEAST }, children: [
+    cell('অর্থনৈতিক কোড', 0, { span: 2, rowSpan: 2, align: AlignmentType.CENTER }), cell('বিবরণ', 2, { rowSpan: 2, align: AlignmentType.CENTER }),
+    cell('হার', 3, { span: 2, align: AlignmentType.CENTER }), cell('টাকার অঙ্ক', 5, { span: 2, align: AlignmentType.CENTER })] }));
+  rows.push(new TableRow({ tableHeader: true, height: { value: 255, rule: HeightRule.ATLEAST }, children: [
+    cell('টাকা', 3, { align: AlignmentType.CENTER }), cell('পয়সা', 4, { align: AlignmentType.CENTER }),
+    cell('টাকা', 5, { align: AlignmentType.CENTER }), cell('পয়সা', 6, { align: AlignmentType.CENTER })] }));
+  rows.push(sec('বেতন ও ভাতা'));
+  m.allowRows.forEach(r => rows.push(itemRow(r)));
+  const tA = splitPaisa(m.totalA), tB = splitPaisa(m.totalB), tN = splitPaisa(m.net);
+  rows.push(row([cell('সর্বমোট বেতন ও ভাতা (ক)', 0, { span: 5, align: AlignmentType.RIGHT, bold: true }),
+    cell(tA.taka, 5, { align: AlignmentType.RIGHT, bold: true }), cell(tA.paisa, 6, { align: AlignmentType.RIGHT, bold: true })]));
+  rows.push(sec('কর্তন ও পরিশোধ'));
+  m.dedRows.forEach(r => rows.push(itemRow(r)));
+  rows.push(row([cell('কর্তন ও পরিশোধ বাবদ মোট আদায় (খ)', 0, { span: 5, align: AlignmentType.RIGHT, bold: true }),
+    cell(tB.taka, 5, { align: AlignmentType.RIGHT, bold: true }), cell(tB.paisa, 6, { align: AlignmentType.RIGHT, bold: true })]));
+  rows.push(row([boxCell(true), cell(toBn('8172108'), 1, { align: AlignmentType.CENTER }), cell('প্রদেয় বিল (ক-খ)', 2, { bold: true }),
+    cell('', 3), cell('', 4), cell(tN.taka, 5, { align: AlignmentType.RIGHT, bold: true }), cell(tN.paisa, 6, { align: AlignmentType.RIGHT, bold: true })]));
+  rows.push(row([cell([para([run('টাকা (কথায়): '), run(m.words, { bold: true })])], 0, { span: 7 })], 330));
+  const mainTable = new Table({ width: { size: TW, type: WidthType.DXA }, columnWidths: W, rows, layout: TableLayoutType.FIXED });
+
+  const pc = (children, w, o = {}) => new TableCell({ children, width: { size: w, type: WidthType.DXA }, borders: o.borders || noB,
+    verticalAlign: VerticalAlign.CENTER, margins: { top: 15, bottom: 15, left: 40, right: 40 } });
+  const topTable = new Table({ width: { size: TW, type: WidthType.DXA }, columnWidths: [2300, 5106, 2300], layout: TableLayoutType.FIXED,
+    rows: [new TableRow({ children: [
+      pc([para('টি. আর. ফরম নং ১৩'), para('[এস. আর. ১৩৯ (১) দ্রষ্টব্য]', { size: 16 })], 2300),
+      pc([para('গেজেটেড সরকারি কর্মকর্তার বেতন বিল', { size: 28, bold: true, align: AlignmentType.CENTER }),
+        para([run(H.month, { size: 20, bold: true, underline: true }), run(' মাস ', { size: 20 }), run(H.year, { size: 20, bold: true, underline: true }), run(' বৎসর', { size: 20 })], { align: AlignmentType.CENTER })], 5106),
+      pc([para('')], 2300)] })] });
+  const dept = para([run('দপ্তর: ', { size: 19 }), run(H.dept || '', { size: 19, bold: true, underline: true })], { align: AlignmentType.CENTER, before: 60, after: 60 });
+  const boxes = Array(7).fill(0).map((_, i) => pc([para(H.orgCode[i] ? toBn(H.orgCode[i]) : '', { align: AlignmentType.CENTER })], 380, { borders: allB }));
+  const codeTable = new Table({ width: { size: 3200 + 7 * 380, type: WidthType.DXA }, columnWidths: [3200, ...Array(7).fill(380)], alignment: AlignmentType.CENTER,
+    layout: TableLayoutType.FIXED, rows: [new TableRow({ height: { value: 300, rule: HeightRule.ATLEAST }, children: [
+      pc([para('প্রাতিষ্ঠানিক/ অপারেশন কোড *', { align: AlignmentType.RIGHT, size: 19 })], 3200), ...boxes] })] });
+  const dots = '…………………';
+  const lab = (l, v) => [run(l + ': '), v ? run(v, { bold: true }) : run(dots)];
+  const irow = (a, b, c) => new TableRow({ children: [a, b, c].map((x, i) => pc([para(x || '')], [3000, 3500, 3206][i])) });
+  const infoTable = new Table({ width: { size: TW, type: WidthType.DXA }, columnWidths: [3000, 3500, 3206], layout: TableLayoutType.FIXED, rows: [
+    irow(lab('নাম', H.name), lab('পদবি', H.desig), lab('এনআইডি নং', H.nid)),
+    irow(lab('ভবিষ্য তহবিল হিসাব নং', H.gpf), lab('ডাক জীবনবীমা নং', H.post), lab('টি আই এন/ই টি আই এন', H.tin)),
+    irow(lab('টোকেন নং', H.token).concat([run(' তারিখ: ' + (H.tokenDate || '………'))]), lab('ভাউচার নং', H.voucher).concat([run(' তারিখ: ' + (H.voucherDate || '………'))]), null)] });
+  const footnote = para('* প্রতিষ্ঠানের ক্ষেত্রে ০৬ ডিজিটের এবং বিশেষ কার্যক্রম/ প্রজেক্ট/ স্কিম -এর ক্ষেত্রে সাত (০৭) ডিজিটের কোড ব্যবহার করতে হবে।', { size: 15, before: 40 });
+
+  const p2 = [];
+  p2.push(para('২', { align: AlignmentType.CENTER }));
+  p2.push(para([run('বাহক/ ব্যাংক/ এজেন্টের নাম: ', { size: 19 }), run('………………………………………………………………………………………', { size: 19 })], { before: 200, after: 200 }));
+  p2.push(new Table({ width: { size: TW, type: WidthType.DXA }, columnWidths: [3000, 3300, 3406], layout: TableLayoutType.FIXED, rows: [new TableRow({ children: [
+    pc([para('তারিখ: ' + (H.signDate || '………………………………'), { size: 19 })], 3000),
+    pc([para('………………………………', { size: 19, align: AlignmentType.CENTER }), para('কর্মকর্তার স্বাক্ষর', { size: 19 }),
+      para('নাম: ' + (H.name || ''), { size: 17 }), para(H.desig || '', { size: 17 }), para('সিল', { size: 19, before: 120 })], 3300),
+    pc([para(''), para('রাজস্ব', { size: 19, align: AlignmentType.CENTER, before: 400 }), para('স্ট্যাম্প', { size: 19, align: AlignmentType.CENTER }), para('', { before: 500 })], 3406, { borders: allB })] })] }));
+  p2.push(para('[অপর পৃষ্ঠা দ্রষ্টব্য]', { size: 15, align: AlignmentType.RIGHT, before: 40 }));
+  p2.push(para('হিসাবরক্ষণ অফিসে ব্যবহারের জন্য', { size: 22, align: AlignmentType.CENTER, before: 300, after: 200 }));
+  p2.push(para('প্রদানের জন্য পাস করা হল, টাকা …………………………………………… কথায় ……………………………………………………………', { size: 19, after: 300 }));
+  const sig = l => [para('________________', { size: 19 }), para(l, { size: 19 }), para('নাম ………………………', { size: 19, before: 40 }), para('তাং ………………………', { size: 19, before: 40 }), para('সিল', { size: 19, before: 40 })];
+  p2.push(new Table({ width: { size: TW, type: WidthType.DXA }, columnWidths: [3000, 3300, 3406], layout: TableLayoutType.FIXED, rows: [
+    new TableRow({ children: [pc(sig('অডিটর (স্বাক্ষর)'), 3000), pc(sig('সুপার (স্বাক্ষর)'), 3300), pc(sig('নিরীক্ষা ও হিসাবরক্ষণ অফিসার (স্বাক্ষর)'), 3406)] }),
+    new TableRow({ height: { value: 700, rule: HeightRule.ATLEAST }, children: [pc([para('')], 3000), pc([para('চেক নং ……………………………', { size: 19, before: 300 })], 3300), pc([para('তাং ………………………', { size: 19, before: 300 })], 3406)] }),
+    new TableRow({ children: [pc([para('')], 3000), pc([para('')], 3300), pc([para('________________', { size: 19, before: 300 }), para('চেক প্রদানকারীর স্বাক্ষর', { size: 19 }),
+      para('নাম ………………………', { size: 19, before: 40 }), para('তাং ………………………', { size: 19, before: 40 }), para('সিল', { size: 19, before: 40 })], 3406)] })] }));
+  p2.push(para('নির্দেশাবলি', { size: 24, align: AlignmentType.CENTER, before: 500, after: 160 }));
+  INSTR.forEach(t => p2.push(para(t, { size: 19, after: 140, line: 270 })));
+  p2.push(para(NOTE1, { size: 19, before: 100, line: 270 }));
+
+  return new Document({ styles: { default: { document: { run: { font: FONT, size: 18 } } } },
+    sections: [{ properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 450, bottom: 380, left: 1100, right: 1100 } } },
+      children: [topTable, dept, codeTable, para('', { size: 8 }), infoTable, para('', { size: 8 }), mainTable, footnote,
+        new Paragraph({ children: [new PageBreak()] }), ...p2] }] });
+}
+
+const INSTR = [
+  '১.  যে মাসের কাজের বিনিময়ে বেতন অর্জন করা হয়েছে মাসের শেষ কার্যদিবসের ৫ (পাঁচ) দিন পূর্বে হিসাবরক্ষণ অফিসে বিল পেশ করতে হবে।',
+  '২.  পেশকৃত প্রতিটি বিলের জন্য একটি করে টোকেন নাম্বার দেওয়া হবে। আপত্তিসহ ফেরত বিল গ্রহণের প্রাক্কালে উক্ত টোকেন নাম্বার বাতিল করতে হবে। এতদ্ব্যতীত চেক গ্রহণকালে স্ট্যাম্পসহ একটি লিখিত রসিদ (প্রযোজ্য ক্ষেত্রে) প্রদান করতে হবে।',
+  '৩.  ব্যাংক অ্যাকাউন্টে টাকা প্রদানের জন্য ইচ্ছানুসারে বেতন বিলে নির্দেশ করা যাবে। এরূপ ক্ষেত্রে নিজ ব্যাংক অ্যাকাউন্টে ইএফটি-এর মাধ্যমে টাকা সংগ্রহের জন্য বেতন বিল পেশ করা যাবে। ইএফটি-এর মাধ্যমে বিল গ্রহণের জন্য ইএফটি ফরম পূরণ করে সংশ্লিষ্ট হিসাবরক্ষণ অফিসে প্রেরণ করতে হবে। ইএফটি-এর মাধ্যমে ব্যাংক অ্যাকাউন্টে সরাসরি টাকা প্রদান করা হবে।'];
+const NOTE1 = 'নোট-১ :  বাহকের নিকট প্রদত্ত টাকা, চেক অথবা বিলের জালিয়াতি বা আত্মসাৎ সংক্রান্ত কোনরূপ দায়-দায়িত্ব সরকার গ্রাহ্য করবে না।';
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function sheetHTML(m) {
+  const H = m.header, dots = '…………………';
+  const mc = p => p == null ? ['', ''] : (s => [s.taka, s.paisa])(splitPaisa(p));
+  const colgroup = '<colgroup><col style="width:4.6%"><col style="width:12.9%"><col style="width:40.2%"><col style="width:11.3%"><col style="width:7.7%"><col style="width:15.5%"><col style="width:7.8%"></colgroup>';
+  const rowHTML = r => {
+    const [rt, rp] = mc(r.rate), [at, ap] = mc(r.amount), on = r.amount != null;
+    return `<tr class="${r.sub ? 'tall' : ''}"><td class="c"><span class="cb">${on ? '×' : ''}</span></td><td class="c">${esc(r.code ? toBn(r.code) : '')}</td>` +
+      `<td>${esc(r.desc)}${r.sub ? '<div class="sub">' + esc(r.sub) + '</div>' : ''}</td><td class="r">${rt}</td><td class="r">${rp}</td><td class="r b">${at}</td><td class="r b">${ap}</td></tr>`;
+  };
+  const tA = splitPaisa(m.totalA), tB = splitPaisa(m.totalB), tN = splitPaisa(m.net);
+  const lab = (l, v) => `${l}: ` + (v ? `<b>${esc(v)}</b>` : dots);
+  const boxes = Array(7).fill(0).map((_, i) => `<td class="bx">${H.orgCode[i] ? toBn(H.orgCode[i]) : ''}</td>`).join('');
+  const sigBlock = l => `<div>________________</div><div>${l}</div><div class="sg">নাম ………………………</div><div class="sg">তাং ………………………</div><div class="sg">সিল</div>`;
+
+  const p1 = `<div class="page p1">
+<table class="top"><colgroup><col style="width:24%"><col style="width:52%"><col style="width:24%"></colgroup><tr>
+<td>টি. আর. ফরম নং ১৩<div style="font-size:8pt">[এস. আর. ১৩৯ (১) দ্রষ্টব্য]</div></td>
+<td><div class="ttl">গেজেটেড সরকারি কর্মকর্তার বেতন বিল</div><div class="mth"><b><u>${esc(H.month)}</u></b> মাস <b><u>${esc(H.year)}</u></b> বৎসর</div></td><td></td></tr></table>
+<div class="dept">দপ্তর: <b><u>${esc(H.dept)}</u></b></div>
+<table class="code"><tr><td style="padding-right:2mm">প্রাতিষ্ঠানিক/ অপারেশন কোড *</td>${boxes}</tr></table>
+<table class="info" style="margin-top:2mm"><colgroup><col style="width:31%"><col style="width:36%"><col style="width:33%"></colgroup>
+<tr><td>${lab('নাম', H.name)}</td><td>${lab('পদবি', H.desig)}</td><td>${lab('এনআইডি নং', H.nid)}</td></tr>
+<tr><td>${lab('ভবিষ্য তহবিল হিসাব নং', H.gpf)}</td><td>${lab('ডাক জীবনবীমা নং', H.post)}</td><td>${lab('টি আই এন/ই টি আই এন', H.tin)}</td></tr>
+<tr><td>${lab('টোকেন নং', H.token)} তারিখ: ${esc(H.tokenDate) || '………'}</td><td>${lab('ভাউচার নং', H.voucher)} তারিখ: ${esc(H.voucherDate) || '………'}</td><td></td></tr></table>
+<table class="main">${colgroup}
+<tr><th colspan="2" rowspan="2">অর্থনৈতিক কোড</th><th rowspan="2">বিবরণ</th><th colspan="2">হার</th><th colspan="2">টাকার অঙ্ক</th></tr>
+<tr><th>টাকা</th><th>পয়সা</th><th>টাকা</th><th>পয়সা</th></tr>
+<tr><td colspan="7" class="sec">বেতন ও ভাতা</td></tr>
+${m.allowRows.map(rowHTML).join('')}
+<tr><td colspan="5" class="lbl">সর্বমোট বেতন ও ভাতা (ক)</td><td class="r b">${tA.taka}</td><td class="r b">${tA.paisa}</td></tr>
+<tr><td colspan="7" class="sec">কর্তন ও পরিশোধ</td></tr>
+${m.dedRows.map(rowHTML).join('')}
+<tr><td colspan="5" class="lbl">কর্তন ও পরিশোধ বাবদ মোট আদায় (খ)</td><td class="r b">${tB.taka}</td><td class="r b">${tB.paisa}</td></tr>
+<tr><td class="c"><span class="cb">×</span></td><td class="c">${toBn('8172108')}</td><td class="b">প্রদেয় বিল (ক-খ)</td><td></td><td></td><td class="r b">${tN.taka}</td><td class="r b">${tN.paisa}</td></tr>
+<tr style="height:6.4mm"><td colspan="7">টাকা (কথায়): <b>${esc(m.words)}</b></td></tr></table>
+<div class="fn">* প্রতিষ্ঠানের ক্ষেত্রে ০৬ ডিজিটের এবং বিশেষ কার্যক্রম/ প্রজেক্ট/ স্কিম -এর ক্ষেত্রে সাত (০৭) ডিজিটের কোড ব্যবহার করতে হবে।</div></div>`;
+
+  const p2 = `<div class="page p2"><div style="text-align:center">২</div>
+<div style="margin:4mm 0">বাহক/ ব্যাংক/ এজেন্টের নাম: ………………………………………………………………………………</div>
+<table class="p2"><colgroup><col style="width:31%"><col style="width:34%"><col style="width:35%"></colgroup><tr>
+<td>তারিখ: ${esc(H.signDate) || '………………………………'}</td>
+<td><div style="text-align:center">………………………………</div><div>কর্মকর্তার স্বাক্ষর</div><div style="font-size:8.5pt">নাম: ${esc(H.name)}</div><div style="font-size:8.5pt">${esc(H.desig)}</div><div class="sg">সিল</div></td>
+<td class="stamp" style="border:.3mm solid #000">রাজস্ব<br>স্ট্যাম্প</td></tr></table>
+<div style="text-align:right;font-size:7.5pt">[অপর পৃষ্ঠা দ্রষ্টব্য]</div>
+<div class="h2">হিসাবরক্ষণ অফিসে ব্যবহারের জন্য</div>
+<div style="margin-bottom:6mm">প্রদানের জন্য পাস করা হল, টাকা …………………………………… কথায় ………………………………………………</div>
+<table class="p2"><colgroup><col style="width:31%"><col style="width:34%"><col style="width:35%"></colgroup>
+<tr><td>${sigBlock('অডিটর (স্বাক্ষর)')}</td><td>${sigBlock('সুপার (স্বাক্ষর)')}</td><td>${sigBlock('নিরীক্ষা ও হিসাবরক্ষণ অফিসার (স্বাক্ষর)')}</td></tr>
+<tr style="height:14mm"><td></td><td style="padding-top:6mm">চেক নং ……………………………</td><td style="padding-top:6mm">তাং ………………………</td></tr>
+<tr><td></td><td></td><td style="padding-top:5mm">${sigBlock('চেক প্রদানকারীর স্বাক্ষর')}</td></tr></table>
+<div class="h2" style="margin-top:12mm">নির্দেশাবলি</div>
+${INSTR.map(t => `<div class="ins">${esc(t)}</div>`).join('')}
+<div class="ins" style="margin-top:3mm">${esc(NOTE1)}</div></div>`;
+  return p1 + p2;
+}
+// ==CORE_END==
+
+// ================= UI =================
+const FIELDS = ['oldBasic','newBasic','fromM','toM','year','spAmt','name','desig','dept','nid','orgCode','gpf','post','tin','signDate','token','tokenDate','voucher','voucherDate'];
+const $ = id => document.getElementById(id);
+let extras = [];
+const STORE = 'tr13_arrear_generator_v1';
+
+function initMonths() {
+  const opt = MONTHS.map((n, i) => `<option value="${i}">${n}</option>`).join('');
+  $('fromM').innerHTML = opt; $('toM').innerHTML = opt;
+  $('fromM').value = '6'; $('toM').value = '8';
+}
+function readState() {
+  const st = {}; FIELDS.forEach(id => st[id] = $(id).value);
+  st.spMode = document.querySelector('input[name=spMode]:checked').value;
+  st.extras = extras; return st;
+}
+function buildInput(st) {
+  return { oldBasic: parseNum(st.oldBasic), newBasic: parseNum(st.newBasic), fromM: +st.fromM, toM: +st.toM, year: parseNum(st.year) || 2026,
+    sp: parseNum(st.spAmt), spMode: st.spMode,
+    extras: st.extras.map(e => ({ type: e.type, code: e.code, custom: e.custom, amt: parseNum(e.amt), mult: !!e.mult })),
+    header: { name: st.name, desig: st.desig, dept: st.dept, nid: st.nid, orgCode: st.orgCode, gpf: toBn(st.gpf), post: toBn(st.post), tin: toBn(st.tin),
+      signDate: toBn(st.signDate), token: toBn(st.token), tokenDate: toBn(st.tokenDate), voucher: toBn(st.voucher), voucherDate: toBn(st.voucherDate) } };
+}
+let lastModel = null;
+function update() {
+  const st = readState();
+  try { localStorage.setItem(STORE, JSON.stringify(st)); } catch (e) {}
+  const m = compute(buildInput(st)); lastModel = m;
+  const line = (a, b, cls) => `<tr class="${cls || ''}"><td>${a}</td><td>${b}</td></tr>`;
+  let warn = '';
+  if (!m.mi) warn = 'শেষ মাস শুরুর মাসের আগে হতে পারবে না।';
+  else if (m.diffP < 0) warn = 'সতর্কতা: বর্তমান বেতন পূর্বের বেতনের চেয়ে কম।';
+  else if (m.net < 0) warn = 'সতর্কতা: কর্তন মোট বকেয়ার চেয়ে বেশি – প্রদেয় বিল ঋণাত্মক।';
+  $('sumCard').innerHTML = `<h2 style="color:#0b6b4f">হিসাবের সারাংশ</h2><table>` +
+    line('মাসিক পার্থক্য', `${moneyStr(m.newP)} − ${moneyStr(m.oldP)} = ${moneyStr(m.diffP)}`) +
+    line('মাস', m.mi ? `${toBn(m.n)} (${m.mi.short} ${toBn(parseNum(st.year) || 2026)})` : '—') +
+    line('বকেয়া মূল বেতন', moneyStr(m.arrearP)) +
+    line('সর্বমোট বেতন ও ভাতা (ক)', moneyStr(m.totalA)) +
+    line('মোট কর্তন (খ)', moneyStr(m.totalB)) +
+    line('প্রদেয় বিল (ক−খ)', moneyStr(m.net), 'tot') + `</table><div style="font-size:13px;margin-top:6px">কথায়: ${esc(m.words)}</div>` +
+    (warn ? `<div class="warn">${warn}</div>` : '');
+  $('sheet').innerHTML = sheetHTML(m);
+  fit();
+}
+function fit() {
+  const outer = $('previewOuter'), box = $('scaleBox');
+  const pageW = 210 * 96 / 25.4;
+  const s = Math.min(1, outer.clientWidth / pageW) || 1;
+  box.style.transform = `scale(${s})`;
+  outer.style.height = (box.offsetHeight * s) + 'px';
+}
+function setStatus(t) { $('status').textContent = t || ''; }
+
+function renderExtras() {
+  const box = $('extras'); box.innerHTML = '';
+  extras.forEach((e, i) => {
+    const list = e.type === 'allow' ? ALLOW : DEDUCT;
+    const opts = list.map(([c, d]) => `<option value="${c}" ${e.code === c ? 'selected' : ''}>${toBn(c)} – ${d}</option>`).join('') +
+      `<option value="custom" ${e.code === 'custom' ? 'selected' : ''}>অন্যান্য (নিজে লিখুন)</option>`;
+    const div = document.createElement('div'); div.className = 'ex';
+    div.innerHTML = `<div class="ex-h"><b>${e.type === 'allow' ? 'ভাতা (বকেয়া)' : 'কর্তন'}</b><button type="button" class="x" data-del="${i}">মুছুন</button></div>
+      <select data-i="${i}" data-k="code">${opts}</select>
+      <input type="text" data-i="${i}" data-k="custom" placeholder="বিবরণ লিখুন" value="${esc(e.custom || '')}" style="display:${e.code === 'custom' ? 'block' : 'none'}">
+      <input type="text" inputmode="decimal" data-i="${i}" data-k="amt" placeholder="পরিমাণ (টাকা)" value="${esc(e.amt || '')}">
+      <label><input type="checkbox" data-i="${i}" data-k="mult" ${e.mult ? 'checked' : ''}> এটি মাসিক পরিমাণ – মাস সংখ্যা দিয়ে গুণ হবে</label>`;
+    box.appendChild(div);
+  });
+}
+function addExtra(type) { extras.push({ type, code: (type === 'allow' ? ALLOW : DEDUCT)[0][0], custom: '', amt: '', mult: true }); renderExtras(); update(); }
+
+function filename(ext) {
+  const m = lastModel; const st = readState();
+  return `Arrear_Pay_Bill_${m && m.mi ? m.mi.short.replace(/[^\w\u0980-\u09FF–-]+/g, '_') : 'bill'}_${parseNum(st.year) || ''}.${ext}`;
+}
+async function saveFile(blob, name) {
+  let d = null;
+  try { d = await claude.use('downloads'); } catch (e) {}
+  if (!d) { setStatus('এই ভিউতে ফাইল ডাউনলোড চালু নেই।'); return false; }
+  try { await d.save({ filename: name, data: blob }); return true; }
+  catch (e) { setStatus(e && e.code === 'declined' ? 'ডাউনলোড বাতিল করা হয়েছে।' : 'ফাইল সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।'); return false; }
+}
+async function downloadDocx() {
+  update();
+  if (!lastModel.mi) { setStatus('আগে মাসের সময়কাল ঠিক করুন।'); return; }
+  if (!window.docx) { setStatus('Word লাইব্রেরি লোড হয়নি – ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'); return; }
+  try {
+    setStatus('Word ফাইল তৈরি হচ্ছে…');
+    const blob = await docx.Packer.toBlob(buildDocx(docx, lastModel));
+    if (await saveFile(blob, filename('docx'))) setStatus('Word (.docx) ফাইল সংরক্ষিত হয়েছে।');
+  } catch (err) { console.error(err); setStatus('Word ফাইল তৈরি করা যায়নি: ' + err.message); }
+}
+async function downloadPDF() {
+  update();
+  if (!lastModel.mi) { setStatus('আগে মাসের সময়কাল ঠিক করুন।'); return; }
+  if (!window.html2pdf) { setStatus('PDF লাইব্রেরি লোড হয়নি – ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।'); return; }
+  const holder = document.createElement('div');
+  holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff';
+  holder.innerHTML = `<div class="sheet">${sheetHTML(lastModel)}</div>`;
+  holder.querySelectorAll('.page').forEach(p => { p.style.boxShadow = 'none'; p.style.margin = '0'; });
+  document.body.appendChild(holder);
+  try {
+    setStatus('PDF তৈরি হচ্ছে…');
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const pdfBlob = await html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css'] } }).from(holder.firstChild).outputPdf('blob');
+    if (await saveFile(pdfBlob, filename('pdf'))) setStatus('PDF ফাইল সংরক্ষিত হয়েছে।');
+  } catch (err) { console.error(err); setStatus('PDF তৈরি করা যায়নি, আবার চেষ্টা করুন।'); }
+  finally { holder.remove(); }
+}
+
+function init() {
+  initMonths();
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || 'null');
+    if (saved) {
+      FIELDS.forEach(id => { if (saved[id] != null) $(id).value = saved[id]; });
+      if (saved.spMode) document.querySelector(`input[name=spMode][value=${saved.spMode}]`).checked = true;
+      if (Array.isArray(saved.extras)) extras = saved.extras;
+    }
+  } catch (e) {}
+  renderExtras();
+  document.querySelectorAll('.ui input, .ui select').forEach(el => { if (!el.closest('#extras')) { el.addEventListener('input', update); el.addEventListener('change', update); } });
+  $('extras').addEventListener('input', ev => { const t = ev.target, i = t.dataset.i; if (i == null) return; extras[i][t.dataset.k] = t.type === 'checkbox' ? t.checked : t.value; update(); });
+  $('extras').addEventListener('change', ev => { const t = ev.target, i = t.dataset.i; if (i == null) return;
+    extras[i][t.dataset.k] = t.type === 'checkbox' ? t.checked : t.value; if (t.dataset.k === 'code') renderExtras(); update(); });
+  $('extras').addEventListener('click', ev => { const d = ev.target.dataset.del; if (d != null) { extras.splice(+d, 1); renderExtras(); update(); } });
+  $('addAllow').onclick = () => addExtra('allow'); $('addDed').onclick = () => addExtra('ded');
+  $('btnDocx').onclick = downloadDocx; $('btnPdf').onclick = downloadPDF;
+  window.addEventListener('resize', fit);
+  update();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+}
+init();
+</script>
+</body>
+</html>
