@@ -78,6 +78,7 @@ button.x{padding:3px 10px;font-size:13px;color:var(--warn)}
 .sheet .in1{font-size:7.2pt;vertical-align:top!important;line-height:1.25}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.side{border:1px solid var(--bd);border-radius:10px;padding:8px}.side-h{font-weight:700;margin-bottom:6px}.side.pl .side-h{color:#0b6b4f}.side.mi .side-h{color:var(--warn)}
 .addln{display:flex;gap:6px;margin-bottom:6px}.addln select{flex:1;min-width:0}.fl{display:grid;grid-template-columns:1fr auto;gap:4px;align-items:end;margin-bottom:6px}.ex .fl label{grid-column:1/-1;font-size:12px;color:var(--mut);display:block}.sub-tot{margin-top:8px;font-size:13px;font-weight:600;color:var(--pri);white-space:pre-wrap}
+.ex label.f{display:block;font-size:13px;color:var(--mut)}
 @media (max-width:560px){.grid,.two{grid-template-columns:1fr}}
 @media print{
   @page{size:A4;margin:0}
@@ -605,6 +606,9 @@ function sideHTML(i, e, keys, sk, title, cls) {
 function renderStaff() {
   $('stRows').innerHTML = staff.map((e, i) => `<div class="ex"><div class="ex-h"><b>কর্মচারী ${toBn(i + 1)}</b><button type="button" class="x" data-sdel="${i}">মুছুন</button></div>` +
     `<input type="text" data-si="${i}" data-sk="name" placeholder="নাম, পদবি ও জি.পি.এফ/ডাক জীবন বীমা নং" value="${esc(e.name)}">` +
+    `<div class="grid"><div><label class="f">পূর্বের মূল বেতন (টাকা)</label><input type="text" inputmode="decimal" data-si="${i}" data-sk="oldBasic" value="${esc(e.oldBasic || '')}"></div>` +
+    `<div><label class="f">বর্তমান মূল বেতন (টাকা)</label><input type="text" inputmode="decimal" data-si="${i}" data-sk="newBasic" value="${esc(e.newBasic || '')}"></div></div>` +
+    `<div class="hint">দুটি ঘর পূরণ করলে ‘বেতন (৪৬০১)’ = (বর্তমান − পূর্বের) × মাস সংখ্যা স্বয়ংক্রিয়ভাবে বসবে। ফাঁকা রাখলে ‘বেতন’ ঘরে নিজে লিখতে পারবেন।</div>` +
     `<div class="two">${sideHTML(i, e, AK, 'sa', 'ভাতা (যোগ হবে)', 'pl')}${sideHTML(i, e, DKEYS, 'sd', 'কর্তন (বিয়োগ হবে)', 'mi')}</div><div class="sub-tot" data-sub="${i}"></div></div>`).join('');
 }
 function wireStaff() {
@@ -621,28 +625,38 @@ function wireStaff() {
 const vsum = (v, ks) => ks.reduce((s, k) => s + (v[k] || 0), 0);
 function updateStaff(st) {
   const yr = parseNum(st.year) || 2026, mi = monthInfo(+st.fromM, +st.toM, yr);
-  const E = staff.map(e => { const v = {}; SF.forEach(([k]) => v[k] = toPaisa(parseNum(e[k]))); return v; });
+  const nM = mi ? mi.n : 0, autoInfo = [];
+  const E = staff.map(e => { const v = {}; SF.forEach(([k]) => v[k] = toPaisa(parseNum(e[k])));
+    const oP = toPaisa(parseNum(e.oldBasic)), nP = toPaisa(parseNum(e.newBasic));
+    const auto = e.sa.includes('basic') && (oP > 0 || nP > 0); let desc = '';
+    if (auto) { const diff = nP - oP; v.basic = diff * nM;
+      desc = mi ? `(${moneyStr(nP)} − ${moneyStr(oP)}) = ${moneyStr(diff)} × ${toBn(nM)} মাস (${mi.list})` : ''; }
+    autoInfo.push({ auto, desc, oP, nP }); return v; });
   const DK = SF.map(x => x[0]).filter(k => !AK.includes(k));
   const tot = {}; SF.forEach(([k]) => tot[k] = E.reduce((s, v) => s + v[k], 0));
   const A = vsum(tot, AK), B = vsum(tot, DK), net = A - B;
   lastModel = { staff: true, mi, E, tot, A, B, net, DK, words: amountWords(net), names: staff.map(e => e.name || ''), month: mi ? mi.short + ' ' + toBn(yr) : '',
     dept: st.dept, code: toEn(st.orgCode || '').slice(0, 10), tok: toBn(st.token), tokD: toBn(st.tokenDate), vou: toBn(st.voucher), vouD: toBn(st.voucherDate),
-    sign: toBn(st.signDate), who: st.name, desig: st.desig };
-  E.forEach((v, i) => { const el = document.querySelector(`[data-sub="${i}"]`), a = vsum(v, AK), b = vsum(v, DK); if (el) el.textContent = `মোট ভাতা ${moneyStr(a)}  |  মোট কর্তন ${moneyStr(b)}  |  নীট ${moneyStr(a - b)}`; });
+    sign: toBn(st.signDate), who: st.name, desig: st.desig, descs: autoInfo.map(a => a.desc), n: nM, E_auto: autoInfo.map(a => a.auto) };
+  E.forEach((v, i) => { const el = document.querySelector(`[data-sub="${i}"]`), a = vsum(v, AK), b = vsum(v, DK); if (el) el.textContent = `মোট ভাতা ${moneyStr(a)}  |  মোট কর্তন ${moneyStr(b)}  |  নীট ${moneyStr(a - b)}` + (autoInfo[i].desc ? `\nমূল বেতন বকেয়া (৪৬০১): ${autoInfo[i].desc}` : ''); });
+  autoInfo.forEach((a, i) => { const inp = document.querySelector(`[data-si="${i}"][data-sk="basic"]`); if (!inp) return;
+    if (a.auto) { inp.value = String(E[i].basic / 100); inp.disabled = true; }
+    else if (inp.disabled) { inp.value = staff[i].basic || ''; inp.disabled = false; } });
   const rowsD = SF.filter(([k]) => !AK.includes(k) && tot[k]).map(([k, l]) => `<tr><td style="padding-left:10px;font-size:14px">${esc(l)}</td><td>${moneyStr(tot[k])}</td></tr>`).join('');
-  $('sumCard').innerHTML = `<h2 style="color:#0b6b4f">হিসাবের সারাংশ</h2><table><tr><td>মোট দাবী (ক)</td><td>${moneyStr(A)}</td></tr>${rowsD}<tr><td>মোট কর্তন (খ)</td><td>${moneyStr(B)}</td></tr><tr class="tot"><td>নীট দাবী (ক−খ)</td><td>${moneyStr(net)}</td></tr></table><div style="font-size:13px;margin-top:6px">কথায়: ${esc(lastModel.words)}</div>` + (mi ? '' : '<div class="warn">শেষ মাস শুরুর মাসের আগে হতে পারবে না।</div>');
+  $('sumCard').innerHTML = `<h2 style="color:#0b6b4f">হিসাবের সারাংশ</h2><table><tr><td>মোট দাবী (ক)</td><td>${moneyStr(A)}</td></tr>${rowsD}<tr><td>মোট কর্তন (খ)</td><td>${moneyStr(B)}</td></tr><tr class="tot"><td>নীট দাবী (ক−খ)</td><td>${moneyStr(net)}</td></tr></table><div style="font-size:13px;margin-top:6px">কথায়: ${esc(lastModel.words)}</div>` + (mi ? (autoInfo.some(a => a.auto && a.nP < a.oP) ? '<div class="warn">সতর্কতা: কোনো কর্মচারীর বর্তমান মূল বেতন পূর্বের চেয়ে কম।</div>' : '') : '<div class="warn">শেষ মাস শুরুর মাসের আগে হতে পারবে না।</div>');
   $('sheet').innerHTML = sheetHTML(lastModel); fit();
 }
 function s15Data(m) {
   const f = p => p ? moneyStr(p) : '';
   const MAP = [['basic',0,0],['hr','med','tr','tf','A'],[0,'gpfS',0],['gpfA',0,0],['wel',0,0,'grp','post',0],['hrd','gas','wat','sp','oth','stamp',0,0],['hb',0,0,'mc','bike','li',0,0],['B','N','N']];
   const lab = { tr: 'যাতায়াত ভাতা (৪৯৬৫)', tf: 'টিফিন ভাতা (৪৯৫৫)', sp: 'বিশেষ সুবিধা সমন্বয় (কর্তন)', oth: 'অন্যান্য কর্তন', stamp: 'স্ট্যাম্প ডিউটি' };
-  const p1 = [];
+  const p1 = [], ds = (m.descs || []).filter(Boolean);
+  const baseSub = ds.length ? (ds.length === 1 && m.E.length === 1 ? ds[0] : `বকেয়া মূল বেতন – পূর্বের ও বর্তমান মূল বেতনের পার্থক্য × ${toBn(m.n)} মাস (${m.mi.list})`) : '';
   TR15.groups.forEach((g, gi) => g.rows.forEach((d, k) => {
     const key = MAP[gi][k]; let val = key === 'A' ? m.A : key === 'B' ? m.B : key === 'N' ? m.net : key ? m.tot[key] : 0;
     if (lab[key] && val) d = lab[key];
     const s = val ? splitPaisa(val) : { taka: '', paisa: '' };
-    p1.push({ d, t: s.taka, p: s.paisa, gi: k === 0 ? gi : -1, n: g.rows.length, words: key === 'N' && k === 2 });
+    p1.push({ d, t: s.taka, p: s.paisa, gi: k === 0 ? gi : -1, n: g.rows.length, words: key === 'N' && k === 2, sub: key === 'basic' ? baseSub : '' });
   }));
   const val = (v, c) => c == null ? '' : c === 'A' ? vsum(v, AK) : c === 'B' ? vsum(v, m.DK) : c === 'N' ? vsum(v, AK) - vsum(v, m.DK) : c === 'mc+bike' ? v.mc + v.bike : v[c];
   const C2 = ['no','name','basic','hr','med','tr','tf',null,null,'A','gpfA'], C3 = ['wel','post','hrd','gas','wat','hb','mc+bike','li','gpfS','grp','sp','oth','stamp','B','N',null,null];
@@ -650,7 +664,7 @@ function s15Data(m) {
   const r2 = [], r3 = [];
   for (let i = 0; i < n; i++) {
     const v = all[i], isT = i === m.E.length;
-    r2.push(C2.map(c => !v ? '' : c === 'no' ? (isT ? '' : toBn(i + 1)) : c === 'name' ? (isT ? 'মোট' : m.names[i]) : f(val(v, c))));
+    r2.push(C2.map(c => !v ? '' : c === 'no' ? (isT ? '' : toBn(i + 1)) : c === 'name' ? (isT ? 'মোট' : m.names[i] + (m.descs && m.descs[i] ? '\n' + m.descs[i] : '')) : f(val(v, c))));
     r3.push(C3.map(c => !v ? '' : f(val(v, c))));
   }
   return { p1, r2, r3 };
@@ -660,10 +674,11 @@ function staffSheetHTML(m) {
   let ci = 0;
   const boxes = [1, '-', 3, '-', 3, ' ', 3].map(s => typeof s === 'number' ? Array(s).fill(0).map(() => `<td class="bx">${m.code[ci++] ? toBn(m.code[ci - 1]) : ''}</td>`).join('') : `<td style="width:3mm;text-align:center">${s}</td>`).join('');
   const t1 = d.p1.map(r => '<tr style="height:5.6mm">' + (r.gi >= 0 ? `<td class="in1" rowspan="${r.n}">${esc(T.I[r.gi] || '')}</td>` : '') +
-    `<td style="font-size:8.5pt">${esc(r.d)}${r.words ? `<div class="sub">কথায়: ${esc(m.words)}</div>` : ''}</td><td class="r b">${r.t}</td><td class="r b">${r.p}</td></tr>`).join('');
+    `<td style="font-size:8.5pt">${esc(r.d)}${r.sub ? `<div class="sub">${esc(r.sub)}</div>` : ''}${r.words ? `<div class="sub">কথায়: ${esc(m.words)}</div>` : ''}</td><td class="r b">${r.t}</td><td class="r b">${r.p}</td></tr>`).join('');
+  const nmH = x => { const [a, ...b] = String(x).split('\n'); return esc(a) + b.map(t => `<div style="font-size:6.3pt;line-height:1.2">${esc(t)}</div>`).join(''); };
   const wt = (ws, head, nums, rows, nameCol) => { const S = ws.reduce((a, b) => a + b, 0);
     return `<table class="main" style="table-layout:fixed;font-size:8pt"><colgroup>${ws.map(w => `<col style="width:${(w / S * 100).toFixed(2)}%">`).join('')}</colgroup><tr>${head.map(h => `<th style="font-weight:400;font-size:6.8pt;vertical-align:top;height:24mm">${esc(h)}</th>`).join('')}</tr>` +
-      `<tr>${nums.map(x => `<td class="c" style="font-size:8pt">${x}</td>`).join('')}</tr>` + rows.map(r => `<tr style="height:11mm">${r.map((x, i) => `<td class="${i === nameCol ? '' : 'r'}">${esc(x)}</td>`).join('')}</tr>`).join('') + '</table>'; };
+      `<tr>${nums.map(x => `<td class="c" style="font-size:8pt">${x}</td>`).join('')}</tr>` + rows.map(r => `<tr style="height:11mm">${r.map((x, i) => `<td class="${i === nameCol ? '' : 'r'}">${i === nameCol ? nmH(x) : esc(x)}</td>`).join('')}</tr>`).join('') + '</table>'; };
   const p1 = `<div class="page p1"><div style="font-size:8.5pt">${T.S[0]}<br>${T.S[1]}</div><div class="ttl" style="margin-top:2mm">${T.S[2]}</div>` +
     `<div class="mth"><b><u>${esc(m.month)}</u></b> মাসের</div><div class="dept" style="text-align:left">দপ্তরের নাম : <b><u>${esc(m.dept)}</u></b></div>` +
     `<table class="code" style="margin-top:2mm"><tr><td style="padding-right:2mm">কোড নং</td>${boxes}</tr></table>` +
@@ -695,7 +710,7 @@ function buildStaffDocx(docx, m) {
   const W1 = [3500, 4400, 1050, 450];
   const rows1 = [row([c('নির্দেশাবলী', W1[0], { al: CT, sz: 19 }), c('বিবরণ', W1[1], { al: CT, sz: 19 }), c('টাকা', W1[2], { al: CT, sz: 19 }), c('প.', W1[3], { al: CT, sz: 19 })], 340)];
   d.p1.forEach(x => { const cs = []; if (x.gi >= 0) cs.push(c(T.I[x.gi] || '', W1[0], { rs: x.n, sz: 15, va: VerticalAlign.TOP, ln: 250 }));
-    cs.push(c(x.words ? [p(x.d, { sz: 17 }), p('কথায়: ' + m.words, { sz: 14 })] : x.d, W1[1], { sz: 17 }), c(x.t, W1[2], { al: RT, b: true }), c(x.p, W1[3], { al: RT, b: true })); rows1.push(row(cs, 292)); });
+    cs.push(c(x.words ? [p(x.d, { sz: 17 }), p('কথায়: ' + m.words, { sz: 14 })] : x.sub ? [p(x.d, { sz: 17 }), p(x.sub, { sz: 14 })] : x.d, W1[1], { sz: 17 }), c(x.t, W1[2], { al: RT, b: true }), c(x.p, W1[3], { al: RT, b: true })); rows1.push(row(cs, 292)); });
   let ci = 0; const bw = [1500], bc = [c('কোড নং', 1500, { nb: true, al: RT, sz: 20 })];
   [1, '-', 3, '-', 3, ' ', 3].forEach(s => { if (typeof s === 'number') for (let i = 0; i < s; i++) { bc.push(c(m.code[ci] ? toBn(m.code[ci]) : '', 380, { al: CT })); ci++; bw.push(380); } else { bc.push(c(s, 220, { nb: true, al: CT })); bw.push(220); } });
   const dt = x => x || '…………………………';
@@ -704,7 +719,7 @@ function buildStaffDocx(docx, m) {
     new Table({ width: W(bw.reduce((a, b) => a + b, 0)), columnWidths: bw, rows: [row(bc, 330)], alignment: CT, layout: TableLayoutType.FIXED }), p('', { sz: 8 }),
     p(`টোকেন নং ${dt(m.tok)} তারিখ ${dt(m.tokD)} ভাউচার নং ${dt(m.vou)} তারিখ ${dt(m.vouD)}`, { sz: 18, bf: 80, af: 60 }), tab(W1, rows1), p(g15('কেবল মাত্র'), { sz: 15, bf: 40 })];
   const wide = (ws, head, nums, rows, nameCol) => tab(ws, [row(head.map((h, i) => c(h, ws[i], { sz: 15, al: CT, va: VerticalAlign.TOP })), 1500, HeightRule.EXACT),
-    row(nums.map((x, i) => c(x, ws[i], { sz: 17, al: CT })), 300), ...rows.map(rw => row(rw.map((x, i) => c(x, ws[i], { sz: 17, al: i === nameCol ? undefined : RT })), 700))]);
+    row(nums.map((x, i) => c(x, ws[i], { sz: 17, al: CT })), 300), ...rows.map(rw => row(rw.map((x, i) => i === nameCol ? c((([a, ...b]) => [p(a, { sz: 17 }), ...b.map(t => p(t, { sz: 13 }))])(String(x).split('\n')), ws[i], {}) : c(x, ws[i], { sz: 17, al: RT })), 700))]);
   const page2 = [p('সংস্থাপন কর্মচারীদের বেতন বিল', { sz: 30, b: true, al: CT }), p([r('অফিসের নাম : ', { sz: 20 }), r(m.dept, { sz: 20, b: true, u: true }), r(' – ' + m.month, { sz: 20 })], { al: CT, bf: 60, af: 80 }),
     wide(T.w2, T.h2, T.n2, d.r2, 1), p(g15('এ অংশে'), { sz: 15, bf: 40 })];
   const page3 = [p('বেতন বিল (পরবর্তী অংশ)', { sz: 26, b: true, af: 80 }), wide(T.w3, T.h3, T.n3, d.r3, -1), p(g15('এ অংশে'), { sz: 15, bf: 40 })];
