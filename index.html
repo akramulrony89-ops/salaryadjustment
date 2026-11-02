@@ -76,7 +76,9 @@ button.x{padding:3px 10px;font-size:13px;color:var(--warn)}
 
 .sheet .land{width:297mm;min-height:209mm;padding:7mm 8mm}
 .sheet .in1{font-size:7.2pt;vertical-align:top!important;line-height:1.25}
-@media (max-width:560px){.grid{grid-template-columns:1fr}}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.side{border:1px solid var(--bd);border-radius:10px;padding:8px}.side-h{font-weight:700;margin-bottom:6px}.side.pl .side-h{color:#0b6b4f}.side.mi .side-h{color:var(--warn)}
+.addln{display:flex;gap:6px;margin-bottom:6px}.addln select{flex:1;min-width:0}.fl{display:grid;grid-template-columns:1fr auto;gap:4px;align-items:end;margin-bottom:6px}.ex .fl label{grid-column:1/-1;font-size:12px;color:var(--mut);display:block}.sub-tot{margin-top:8px;font-size:13px;font-weight:600;color:var(--pri);white-space:pre-wrap}
+@media (max-width:560px){.grid,.two{grid-template-columns:1fr}}
 @media print{
   @page{size:A4;margin:0}
   body{background:#fff}
@@ -537,14 +539,18 @@ function addExtra(type) { extras.push({ type, code: (type === 'allow' ? ALLOW : 
 
 function filename(ext) {
   const m = lastModel; const st = readState();
-  return `Arrear_Pay_Bill_${m && m.mi ? m.mi.short.replace(/[^\w\u0980-\u09FF–-]+/g, '_') : 'bill'}_${parseNum(st.year) || ''}.${ext}`;
+  return `${lastModel && lastModel.staff ? 'TR15_Staff_Pay_Bill' : 'Arrear_Pay_Bill'}_${m && m.mi ? m.mi.short.replace(/[^\w\u0980-\u09FF–-]+/g, '_') : 'bill'}_${parseNum(st.year) || ''}.${ext}`;
 }
 async function saveFile(blob, name) {
   let d = null;
-  try { d = await claude.use('downloads'); } catch (e) {}
-  if (!d) { setStatus('এই ভিউতে ফাইল ডাউনলোড চালু নেই।'); return false; }
+  try { if (window.claude && claude.use) d = await claude.use('downloads'); } catch (e) {}
+  if (!d) {
+    try { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); setStatus('ডাউনলোড শুরু হয়েছে।'); return true; }
+    catch (e) { setStatus('এই ভিউতে ফাইল ডাউনলোড চালু নেই।'); return false; }
+  }
   try { await d.save({ filename: name, data: blob }); return true; }
-  catch (e) { setStatus(e && e.code === 'declined' ? 'ডাউনলোড বাতিল করা হয়েছে।' : 'ফাইল সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।'); return false; }
+  catch (e) { setStatus(e && e.code === 'declined' ? 'ডাউনলোড বাতিল করা হয়েছে।' : 'ফাইল সংরক্ষণ করা যায়নি (' + ((e && (e.code || e.message)) || 'অজানা ত্রুটি') + ')।'); return false; }
 }
 async function downloadDocx() {
   update();
@@ -572,7 +578,7 @@ async function downloadPDF() {
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }, pagebreak: { mode: ['css'] } }).from(holder.firstChild).outputPdf('blob');
     if (await saveFile(pdfBlob, filename('pdf'))) setStatus('PDF ফাইল সংরক্ষিত হয়েছে।');
-  } catch (err) { console.error(err); setStatus('PDF তৈরি করা যায়নি, আবার চেষ্টা করুন।'); }
+  } catch (err) { console.error(err); setStatus('PDF তৈরি করা যায়নি: ' + ((err && err.message) || 'আবার চেষ্টা করুন') + ' – Word (.docx) বাটন ব্যবহার করতে পারেন।'); }
   finally { holder.remove(); }
 }
 
@@ -582,21 +588,35 @@ const SF = [['basic','বেতন (৪৬০১)'],['hr','বাড়ী ভ�
   ['gpfS','সাধারণ ভবিষ্য তহবিল'],['gpfA','ভবিষ্য তহবিল অগ্রিম ও সুদ'],['wel','কল্যাণ তহবিল'],['grp','গোষ্ঠী বীমা'],['post','ডাক জীবন বীমা'],
   ['hrd','বাড়ী ভাড়া (কর্তন)'],['gas','গ্যাস'],['wat','পানি ও পৌরকর'],['hb','গৃহ নির্মাণ কিস্তি'],['mc','মোটর সাইকেল অগ্রিম'],['bike','বাই সাইকেল অগ্রিম'],['li','প্রদত্ত ঋণের সুদ'],['sp','বিশেষ সুবিধা (কর্তন)'],['oth','অন্যান্য কর্তন'],['stamp','স্ট্যাম্প ডিউটি']];
 const AK = ['basic','hr','med','tr','tf'];
-let staff = [{ name: '' }];
+let staff = [{ name: '', sa: ['basic', 'hr', 'med'], sd: ['gpfS', 'wel', 'grp', 'post'] }];
 const g15 = k => TR15.S.find(s => s.includes(k)) || '';
 function applyRole(r) {
   const s = r === 'staff'; $('staffCard').style.display = s ? 'block' : 'none';
   [...document.querySelectorAll('.ui .card h2')].filter(h => /^[১৩৪]\./.test(h.textContent)).forEach(h => h.parentElement.style.display = s ? 'none' : 'block');
 }
+const DKEYS = SF.map(x => x[0]).filter(k => !AK.includes(k)), SFL = Object.fromEntries(SF);
+const newEmp = () => ({ name: '', sa: ['basic', 'hr', 'med'], sd: ['gpfS', 'wel', 'grp', 'post'] });
+function sideHTML(i, e, keys, sk, title, cls) {
+  const free = keys.filter(k => !e[sk].includes(k));
+  return `<div class="side ${cls}"><div class="side-h">${title}</div><div class="addln"><select data-addsel="${i}:${sk}">` +
+    (free.map(k => `<option value="${k}">${esc(SFL[k])}</option>`).join('') || '<option value="">— সব যোগ হয়েছে —</option>') + `</select><button type="button" data-add="${i}:${sk}">+ যোগ</button></div>` +
+    e[sk].map(k => `<div class="fl"><label>${esc(SFL[k])}</label><input type="text" inputmode="decimal" data-si="${i}" data-sk="${k}" value="${esc(e[k] || '')}"><button type="button" class="x" data-rm="${i}:${sk}:${k}">×</button></div>`).join('') + '</div>';
+}
 function renderStaff() {
   $('stRows').innerHTML = staff.map((e, i) => `<div class="ex"><div class="ex-h"><b>কর্মচারী ${toBn(i + 1)}</b><button type="button" class="x" data-sdel="${i}">মুছুন</button></div>` +
-    `<input type="text" data-si="${i}" data-sk="name" placeholder="নাম, পদবি ও জি.পি.এফ/ডাক জীবন বীমা নং" value="${esc(e.name)}"><div class="grid">` +
-    SF.map(c => `<div><label class="f">${c[1]}</label><input type="text" inputmode="decimal" data-si="${i}" data-sk="${c[0]}" value="${esc(e[c[0]] || '')}"></div>`).join('') + '</div></div>').join('');
+    `<input type="text" data-si="${i}" data-sk="name" placeholder="নাম, পদবি ও জি.পি.এফ/ডাক জীবন বীমা নং" value="${esc(e.name)}">` +
+    `<div class="two">${sideHTML(i, e, AK, 'sa', 'ভাতা (যোগ হবে)', 'pl')}${sideHTML(i, e, DKEYS, 'sd', 'কর্তন (বিয়োগ হবে)', 'mi')}</div><div class="sub-tot" data-sub="${i}"></div></div>`).join('');
 }
 function wireStaff() {
   $('stRows').addEventListener('input', ev => { const t = ev.target; if (t.dataset.si == null) return; staff[t.dataset.si][t.dataset.sk] = t.value; update(); });
-  $('stRows').addEventListener('click', ev => { const d = ev.target.dataset.sdel; if (d != null && staff.length > 1) { staff.splice(+d, 1); renderStaff(); update(); } });
-  $('addSt').onclick = () => { staff.push({ name: '' }); renderStaff(); update(); };
+  $('stRows').addEventListener('click', ev => {
+    const t = ev.target;
+    if (t.dataset.sdel != null) { if (staff.length > 1) { staff.splice(+t.dataset.sdel, 1); renderStaff(); update(); } }
+    else if (t.dataset.add) { const [i, sk] = t.dataset.add.split(':'), v = document.querySelector(`[data-addsel="${i}:${sk}"]`).value;
+      if (v && !staff[i][sk].includes(v)) { staff[i][sk].push(v); renderStaff(); update(); } }
+    else if (t.dataset.rm) { const [i, sk, k] = t.dataset.rm.split(':'); staff[i][sk] = staff[i][sk].filter(x => x !== k); staff[i][k] = ''; renderStaff(); update(); }
+  });
+  $('addSt').onclick = () => { staff.push(newEmp()); renderStaff(); update(); };
 }
 const vsum = (v, ks) => ks.reduce((s, k) => s + (v[k] || 0), 0);
 function updateStaff(st) {
@@ -608,7 +628,9 @@ function updateStaff(st) {
   lastModel = { staff: true, mi, E, tot, A, B, net, DK, words: amountWords(net), names: staff.map(e => e.name || ''), month: mi ? mi.short + ' ' + toBn(yr) : '',
     dept: st.dept, code: toEn(st.orgCode || '').slice(0, 10), tok: toBn(st.token), tokD: toBn(st.tokenDate), vou: toBn(st.voucher), vouD: toBn(st.voucherDate),
     sign: toBn(st.signDate), who: st.name, desig: st.desig };
-  $('sumCard').innerHTML = `<h2 style="color:#0b6b4f">হিসাবের সারাংশ</h2><table><tr><td>মোট দাবী (ক)</td><td>${moneyStr(A)}</td></tr><tr><td>মোট কর্তন (খ)</td><td>${moneyStr(B)}</td></tr><tr class="tot"><td>নীট দাবী (ক−খ)</td><td>${moneyStr(net)}</td></tr></table><div style="font-size:13px;margin-top:6px">কথায়: ${esc(lastModel.words)}</div>` + (mi ? '' : '<div class="warn">শেষ মাস শুরুর মাসের আগে হতে পারবে না।</div>');
+  E.forEach((v, i) => { const el = document.querySelector(`[data-sub="${i}"]`), a = vsum(v, AK), b = vsum(v, DK); if (el) el.textContent = `মোট ভাতা ${moneyStr(a)}  |  মোট কর্তন ${moneyStr(b)}  |  নীট ${moneyStr(a - b)}`; });
+  const rowsD = SF.filter(([k]) => !AK.includes(k) && tot[k]).map(([k, l]) => `<tr><td style="padding-left:10px;font-size:14px">${esc(l)}</td><td>${moneyStr(tot[k])}</td></tr>`).join('');
+  $('sumCard').innerHTML = `<h2 style="color:#0b6b4f">হিসাবের সারাংশ</h2><table><tr><td>মোট দাবী (ক)</td><td>${moneyStr(A)}</td></tr>${rowsD}<tr><td>মোট কর্তন (খ)</td><td>${moneyStr(B)}</td></tr><tr class="tot"><td>নীট দাবী (ক−খ)</td><td>${moneyStr(net)}</td></tr></table><div style="font-size:13px;margin-top:6px">কথায়: ${esc(lastModel.words)}</div>` + (mi ? '' : '<div class="warn">শেষ মাস শুরুর মাসের আগে হতে পারবে না।</div>');
   $('sheet').innerHTML = sheetHTML(lastModel); fit();
 }
 function s15Data(m) {
